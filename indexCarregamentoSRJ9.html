@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Chamada AM</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --ml-yellow: #FFE600;
+    --ml-blue:   #3483FA;
+    --ml-green:  #00A650;
+    --ml-orange: #FF7733;
+    --ml-red:    #F23D4F;
+    --bg:    #EEEEEE;
+    --white: #FFFFFF;
+    --gray1: #F7F7F7;
+    --gray2: #E6E6E6;
+    --gray3: #999999;
+    --gray4: #666666;
+    --dark:  #333333;
+    --c-hawk:    #E37400;
+    --c-decargo: #3483FA;
+    --c-parceiro:#9B30D9;
+    --c-coop:    #F23D4F;
+    --c-eco:     #00A9CE;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+    padding-bottom: 20px;
+    color: var(--dark);
+  }
+
+  /* ══════════════════════════════════════
+     STICKY TOP BLOCK
+  ══════════════════════════════════════ */
+  .sticky-top {
+    position: sticky; top: 0; z-index: 200;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  .header-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 12px 5px;
+    background: var(--ml-yellow);
+  }
+  .header-title { font-size: 15px; font-weight: 700; color: var(--dark); }
+  .header-title span { color: var(--ml-blue); }
+  .progress-bar-wrap { height: 3px; background: rgba(0,0,0,0.2); }
+  .progress-bar-fill { height: 100%; background: var(--ml-blue); transition: width 0.4s ease; }
+
+  /* ── KPI cards row ── */
+  .kpi-cards {
+    display: flex; background: var(--white);
+    border-bottom: 1px solid var(--gray2);
+  }
+  .kpi-card {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 5px 3px 4px;
+    border-right: 1px solid var(--gray2);
+    text-align: center;
+    gap: 1px;
+  }
+  .kpi-card:last-child { border-right: none; }
+  .kc-num  { font-size: 16px; font-weight: 700; line-height: 1; color: var(--dark); }
+  .kc-num.blue   { color: var(--ml-blue); }
+  .kc-num.green  { color: var(--ml-green); }
+  .kc-num.amber  { color: var(--ml-orange); }
+  .kc-num.red    { color: var(--ml-red); }
+  .kc-lbl  { font-size: 8px; font-weight: 600; color: var(--gray3); text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+  .kc-bar-bg   { width: 90%; height: 3px; background: var(--gray2); border-radius: 2px; overflow: hidden; }
+  .kc-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+  .kc-bar-fill.blue   { background: var(--ml-blue); }
+  .kc-bar-fill.orange { background: var(--ml-orange); }
+  .kc-bar-fill.red    { background: var(--ml-red); }
+  .kc-sub { font-size: 8px; color: var(--gray3); white-space: nowrap; }
+
+  /* ── FILTER ── */
+  .filter-wrap { background: var(--white); border-bottom: 2px solid var(--ml-yellow); padding: 6px 10px; }
+  .filter-scroll { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .filter-scroll::-webkit-scrollbar { display: none; }
+  .filter-btn {
+    flex-shrink: 0; padding: 5px 12px; border-radius: 20px;
+    border: 1.5px solid var(--gray2); background: var(--white);
+    color: var(--gray4); font-size: 11px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .filter-btn.active { background: var(--ml-blue); border-color: var(--ml-blue); color: #fff; }
+
+  /* ══════════════════════════════════════
+     TIPO HEADER (Volumosos / Leves)
+  ══════════════════════════════════════ */
+  .tipo-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px 5px;
+  }
+  .tipo-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .tipo-label.vol { color: var(--ml-orange); }
+  .tipo-label.lev { color: var(--ml-blue); }
+  .tipo-divider { flex: 1; height: 1px; background: var(--gray2); }
+  .tipo-pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+  .tipo-pill.vol { background: #FFF0E8; color: var(--ml-orange); border: 1px solid #FFD4B8; }
+  .tipo-pill.lev { background: #EBF1FF; color: var(--ml-blue);   border: 1px solid #C2D8FF; }
+
+  /* ══════════════════════════════════════
+     TABLE
+     Cols: check | onda+eta | rota+transp | modal | vaga | hora
+     Widths: 30px | 68px | 1fr | 72px | 36px | 58px
+  ══════════════════════════════════════ */
+  .table-wrap {
+    margin: 0 10px 10px;
+    background: var(--white);
+    border-radius: 8px; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  .tbl-head, .route-row {
+    display: grid;
+    grid-template-columns: 70px 72px 1fr 1fr 40px 60px;
+    align-items: center;
+    gap: 0;
+  }
+
+  .tbl-head {
+    background: var(--gray1);
+    border-bottom: 1.5px solid var(--gray2);
+    padding: 5px 6px;
+  }
+  .tbl-head > span {
+    font-size: 9px; font-weight: 700;
+    color: var(--gray3); text-transform: uppercase; letter-spacing: 0.4px;
+    padding: 0 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tbl-head > span:nth-child(1) { text-align: center; }
+  .tbl-head > span:nth-child(5) { text-align: center; }
+  .tbl-head > span:nth-child(6) { text-align: center; }
+
+  /* ── ROW ── */
+  .route-row {
+    padding: 0 6px;
+    min-height: 48px;
+    border-bottom: 1px solid var(--gray2);
+    cursor: pointer;
+    transition: background 0.12s;
+    position: relative;
+  }
+  .route-row:last-child { border-bottom: none; }
+  .route-row:active { background: var(--gray1); }
+  .route-row.called  { background: var(--gray1); opacity: 0.5; }
+
+  /* left accent */
+  .route-row::before {
+    content: ''; position: absolute;
+    left: 0; top: 0; bottom: 0; width: 3px;
+  }
+  .route-row[data-t="Hawk Transportes"]::before       { background: var(--c-hawk); }
+  .route-row[data-t="DECARGO"]::before                { background: var(--c-decargo); }
+  .route-row[data-t="PARCEIRO SPOT SOLUCOES"]::before { background: var(--c-parceiro); }
+  .route-row[data-t="COOPMETRO"]::before              { background: var(--c-coop); }
+  .route-row[data-t="ECO EXPRESS"]::before            { background: var(--c-eco); }
+
+  /* ── COL 1: CHECK ── */
+  .cell-check {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; padding: 0 6px;
+  }
+  .check-box {
+    width: 20px; height: 20px; border-radius: 5px;
+    border: 2px solid var(--gray2); background: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: transparent;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .check-box.checked { background: var(--ml-green); border-color: var(--ml-green); color: #fff; }
+  .route-row.called .check-box { background: var(--gray2); border-color: var(--gray2); color: var(--gray3); }
+
+  /* ── COL 2: ONDA + ETA ── */
+  .cell-onda {
+    padding: 8px 4px 8px 3px;
+    border-right: 1px solid var(--gray2);
+  }
+  .onda-num { font-size: 12px; font-weight: 700; color: var(--dark); white-space: nowrap; }
+  .onda-eta { font-size: 10px; color: var(--gray3); white-space: nowrap; margin-top: 1px; }
+
+  /* ── COL 3: ROTA + TRANSP + HIBRIDA ── */
+  .cell-info { padding: 8px 6px; min-width: 0; }
+  .info-row1 { display: flex; align-items: center; gap: 4px; margin-bottom: 3px; flex-wrap: wrap; }
+  .rota-code { font-size: 13px; font-weight: 700; color: var(--dark); }
+  .badge-hibrida {
+    font-size: 9px; font-weight: 700;
+    background: #FFF8E6; color: #B76E00; border: 1px solid #FFD98A;
+    border-radius: 3px; padding: 1px 4px; text-transform: uppercase;
+  }
+  .info-row2 { display: flex; align-items: center; gap: 4px; }
+  .transp-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .transp-dot[data-t="Hawk Transportes"]       { background: var(--c-hawk); }
+  .transp-dot[data-t="DECARGO"]                { background: var(--c-decargo); }
+  .transp-dot[data-t="PARCEIRO SPOT SOLUCOES"] { background: var(--c-parceiro); }
+  .transp-dot[data-t="COOPMETRO"]              { background: var(--c-coop); }
+  .transp-dot[data-t="ECO EXPRESS"]            { background: var(--c-eco); }
+  .transp-name {
+    font-size: 11px; font-weight: 600;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.3;
+    max-width: 100%;
+  }
+  .transp-name[data-t="Hawk Transportes"]       { color: var(--c-hawk); }
+  .transp-name[data-t="DECARGO"]                { color: var(--c-decargo); }
+  .transp-name[data-t="PARCEIRO SPOT SOLUCOES"] { color: var(--c-parceiro); }
+  .transp-name[data-t="COOPMETRO"]              { color: var(--c-coop); }
+  .transp-name[data-t="ECO EXPRESS"]            { color: var(--c-eco); }
+
+  /* ── COL 4: MODAL ── */
+  .cell-modal {
+    padding: 8px 5px;
+    border-left: 1px solid var(--gray2);
+    min-width: 0;
+  }
+  .modal-tag {
+    font-size: 10px; color: var(--gray4);
+    display: block;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+  }
+
+  /* ── COL 5: VAGA ── */
+  .cell-vaga {
+    text-align: center;
+    border-left: 1px solid var(--gray2);
+    padding: 8px 2px;
+  }
+  .vaga-num { font-size: 18px; font-weight: 700; color: var(--ml-blue); line-height: 1; }
+  .vaga-lbl { font-size: 9px; color: var(--gray3); text-transform: uppercase; letter-spacing: 0.3px; }
+  .route-row.called .vaga-num { color: var(--gray3); }
+
+  /* ── COL 6: HORA CHECK ── */
+  .cell-hora {
+    text-align: center;
+    border-left: 1px solid var(--gray2);
+    padding: 8px 3px;
+  }
+  .hora-time {
+    font-size: 11px; font-weight: 700;
+    color: var(--ml-green);
+    white-space: nowrap;
+  }
+  .hora-time.late { color: var(--ml-red); }
+  .hora-dash { font-size: 14px; color: var(--gray2); }
+  .route-row.called .hora-time { color: var(--gray3); }
+
+  .reset-btn {
+    display: block; margin: 12px auto 6px;
+    background: var(--white); border: 1.5px solid var(--gray2);
+    color: var(--gray4); font-size: 12px; padding: 7px 20px;
+    border-radius: 20px; cursor: pointer;
+  }
+  .empty-msg { text-align: center; color: var(--gray3); font-size: 14px; padding: 40px 20px; }
+</style>
+</head>
+<body>
+
+<!-- STICKY TOP -->
+<div class="sticky-top">
+  <div class="header-top">
+    <div class="header-title">🚚 Chamada <span>AM</span></div>
+    <div id="headerDate" style="font-size:11px;font-weight:600;color:#666"></div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="hBar" style="width:0%"></div>
+  </div>
+  <!-- KPI cards: Total | Chamados | Pendentes | ⚠️Atrasadas | 📦Vol | 📬Lev -->
+  <div class="kpi-cards">
+    <div class="kpi-card">
+      <div class="kc-num" id="kTotal">0</div>
+      <div class="kc-lbl">Total</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kc-num green" id="kCalled">0</div>
+      <div class="kc-lbl">Chamados</div>
+      <div class="kc-bar-bg"><div class="kc-bar-fill blue" id="kpiBar" style="width:0%"></div></div>
+      <div class="kc-sub" id="kpiPct">0%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kc-num amber" id="kPending">0</div>
+      <div class="kc-lbl">Pendentes</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kc-num red" id="kpiLate">0</div>
+      <div class="kc-lbl">⚠️ Atrasadas</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kc-num amber" id="kpiVolPct">0%</div>
+      <div class="kc-lbl">📦 Volumosos</div>
+      <div class="kc-bar-bg"><div class="kc-bar-fill orange" id="kpiVolBar" style="width:0%"></div></div>
+      <div class="kc-sub" id="kpiVolCount">0/0</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kc-num blue" id="kpiLevPct">0%</div>
+      <div class="kc-lbl">📬 Leves</div>
+      <div class="kc-bar-bg"><div class="kc-bar-fill blue" id="kpiLevBar" style="width:0%"></div></div>
+      <div class="kc-sub" id="kpiLevCount">0/0</div>
+    </div>
+  </div><!-- end kpi-cards -->
+
+  <!-- FILTERS inside sticky -->
+  <div class="filter-wrap">
+    <div class="filter-scroll" id="filterTabs"></div>
+  </div>
+</div><!-- end sticky-top -->
+
+<!-- LIST -->
+<div id="loadingBar" style="display:none;text-align:center;padding:20px;font-size:13px;color:#999">Carregando dados da planilha...</div>
+<div id="listContainer"></div>
+<button class="reset-btn" onclick="resetAll()">↩ Resetar chamadas</button>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  ⚙️  CONFIGURAÇÃO — substitua pela URL do seu Apps Script
+// ═══════════════════════════════════════════════════
+const API_URL = 'COLE_AQUI_A_URL_DO_APPS_SCRIPT';
+
+// ── Comunicação com Apps Script ──────────────────────
+async function api(acao, extra = {}) {
+  const res  = await fetch(API_URL, { method:'POST', body: JSON.stringify({ acao, ...extra }) });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.erro || 'Erro na API');
+  return json.data;
+}
+
+// ── Polling a cada 15s para sincronizar equipe ───────
+setInterval(async () => {
+  if (!RAW_DATA.length) return;
+  try {
+    const checks = await api('getChecks');
+    RAW_DATA.forEach((r, i) => {
+      if (checks[r[1]])        S[i] = checks[r[1]];
+      else if (S[i]?.called)   delete S[i];
+    });
+    renderList();
+  } catch(e) {}
+}, 15000);
+
+// ── Init: carrega dados + checks ao abrir ────────────
+async function init() {
+  const hoje = new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'});
+  document.getElementById('headerDate').textContent = hoje;
+  document.getElementById('loadingBar').style.display = 'block';
+  try {
+    const [dados, checks] = await Promise.all([api('getDados'), api('getChecks')]);
+    RAW_DATA = dados;
+    S = {};
+    RAW_DATA.forEach((r, i) => { if (checks[r[1]]) S[i] = checks[r[1]]; });
+    buildFilters();
+    renderList();
+  } catch(e) {
+    document.getElementById('loadingBar').textContent = '⚠️ Erro: ' + e.message;
+    return;
+  }
+  document.getElementById('loadingBar').style.display = 'none';
+}
+
+// ── State ────────────────────────────────────────────
+let RAW_DATA = [];
+let S = {};
+
+// ── Dados temporários para compatibilidade (sobrescritos pelo init) ──
+const RAW_DATA_CACHE = [
+  ["Onda 2","V2_AM1","PARCEIRO SPOT SOLUCOES","Vuc Vamos 2025","","1 Volumosos","7:00 - 7:30","1"],
+  ["Onda 3","X7_AM1","Hawk Transportes","Vuc","Híbrida","1 Volumosos","7:30 - 8:00","2"],
+  ["Onda 3","X9_AM1","DECARGO","VUC Dedicado com Ajudante","Híbrida","1 Volumosos","7:30 - 8:00","3"],
+  ["Onda 4","X5_AM1","Hawk Transportes","Vuc SDD","Híbrida","1 Volumosos","8:00 - 8:30","2"],
+  ["Onda 4","X8_AM1","Hawk Transportes","Vuc","Híbrida","1 Volumosos","8:00 - 8:30","3"],
+  ["Onda 5","V1_AM1","PARCEIRO SPOT SOLUCOES","Vuc Vamos 2025","","1 Volumosos","8:30 - 9:00","2"],
+  ["Onda 3","B13_AM1","PARCEIRO SPOT SOLUCOES","Utilitários SDD","","2 Leves","7:30 - 8:00","1"],
+  ["Onda 4","V5_AM1","PARCEIRO SPOT SOLUCOES","Van Vamos 2025","","2 Leves","8:00 - 8:30","2"],
+  ["Onda 4","V4_AM1","PARCEIRO SPOT SOLUCOES","Van Vamos 2025","","2 Leves","8:00 - 8:30","3"],
+  ["Onda 4","B18_AM1","PARCEIRO SPOT SOLUCOES","Utilitários","","2 Leves","8:00 - 8:30","4"],
+  ["Onda 4","V6_AM1","PARCEIRO SPOT SOLUCOES","Yellow Pool Large Van – Equipe única","","2 Leves","8:00 - 8:30","5"],
+  ["Onda 4","V10_AM1","DECARGO","Van TKS 2025 H2","","2 Leves","8:00 - 8:30","6"],
+  ["Onda 4","V9_AM1","DECARGO","Van TKS 2025 H2","","2 Leves","8:00 - 8:30","7"],
+  ["Onda 5","X4_AM1","DECARGO","Van TKS 2025 H2","Híbrida","2 Leves","8:30 - 9:00","1"],
+  ["Onda 5","A20_AM1","COOPMETRO","Veículo de Passeio","","2 Leves","8:30 - 9:00","3"],
+  ["Onda 5","A2_AM1","COOPMETRO","Veículo de Passeio","","2 Leves","8:30 - 9:00","4"],
+  ["Onda 5","X6_AM1","DECARGO","Vuc p","Híbrida","2 Leves","8:30 - 9:00","5"],
+  ["Onda 5","A24_AM1","DECARGO","Veículo de Passeio","","2 Leves","8:30 - 9:00","5"],
+  ["Onda 5","A6_AM1","DECARGO","Veículo de Passeio","","2 Leves","8:30 - 9:00","6"],
+  ["Onda 5","B11_AM1","DECARGO","Utilitários SDD","","2 Leves","8:30 - 9:00","7"],
+  ["Onda 5","A11_AM1","ECO EXPRESS","Veículo de Passeio","","2 Leves","8:30 - 9:00","8"],
+  ["Onda 5","A1_AM1","Hawk Transportes","Veículo de Passeio","","2 Leves","8:30 - 9:00","9"],
+  ["Onda 5","A3_AM1","Hawk Transportes","Veículo de Passeio","","2 Leves","8:30 - 9:00","10"],
+  ["Onda 5","A4_AM1","Hawk Transportes","Veículo de Passeio","","2 Leves","8:30 - 9:00","11"],
+  ["Onda 5","A5_AM1","Hawk Transportes","Veículo de Passeio","","2 Leves","8:30 - 9:00","12"],
+  ["Onda 5","A18_AM1","PARCEIRO SPOT SOLUCOES","Veículo de Passeio","","2 Leves","8:30 - 9:00","13"],
+  ["Onda 6","X2_AM1","DECARGO","Van TKS 2025 H2","Híbrida","2 Leves","9:00 - 09:30","1"],
+  ["Onda 6","A15_AM1","COOPMETRO","Veículo de Passeio","","2 Leves","9:00 - 09:30","2"],
+  ["Onda 6","A14_AM1","COOPMETRO","Veículo de Passeio","","2 Leves","9:00 - 09:30","4"],
+  ["Onda 6","B9_AM1","DECARGO","Utilitário Vamos 2025","","2 Leves","9:00 - 09:30","5"],
+  ["Onda 6","X1_AM1","Hawk Transportes","Vuc p","Híbrida","2 Leves","9:00 - 09:30","6"],
+  ["Onda 6","A9_AM1","DECARGO","Veículo de Passeio","","2 Leves","9:00 - 09:30","6"],
+  ["Onda 6","A17_AM1","DECARGO","Veículo de Passeio","","2 Leves","9:00 - 09:30","7"],
+  ["Onda 6","A10_AM1","ECO EXPRESS","Veículo de Passeio","","2 Leves","9:00 - 09:30","8"],
+  ["Onda 6","A23_AM1","Hawk Transportes","Veículo de Passeio","","2 Leves","9:00 - 09:30","9"],
+  ["Onda 6","A8_AM1","Hawk Transportes","Veículo de Passeio","","2 Leves","9:00 - 09:30","10"],
+  ["Onda 6","A12_AM1","Hawk Transportes","Veículo de Passeio","","2 Leves","9:00 - 09:30","11"],
+  ["Onda 6","A13_AM1","Hawk Transportes","Veículo de Passeio","","2 Leves","9:00 - 09:30","12"],
+  ["Onda 7","X3_AM1","DECARGO","Van TKS 2025 H2","Híbrida","2 Leves","09:30 - 10:00","1"],
+  ["Onda 7","A7_AM1","Hawk Transportes","Veículo de Passeio","","2 Leves","09:30 - 10:00","9"],
+  ["Onda 7","B12_AM1","Hawk Transportes","Utilitários SDD","","2 Leves","09:30 - 10:00","10"],
+  ["Onda 8","A19_AM1","COOPMETRO","Veículo de Passeio","","2 Leves","10:00 - 10:30","2"],
+  ["Onda 8","A16_AM1","DECARGO","Veículo de Passeio","","2 Leves","10:00 - 10:30","3"],
+  ["Onda 8","V3_AM1","PARCEIRO SPOT SOLUCOES","Vuc p","","2 Leves","10:00 - 10:30","4"],
+  ["Onda 8","B10_AM1","DECARGO","Utilitário Vamos 2025","","2 Leves","10:00 - 10:30","4"]
+];  // fim RAW_DATA_CACHE
+// RAW_DATA começa vazio, será preenchido pelo init()
+
+function now()        { return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+function isCalled(i)  { return !!(S[i]?.called); }
+function getTime(i)   { return S[i]?.time||null; }
+
+// Parse "HH:MM" or "HH:MM:SS" → minutes
+function mins(t) {
+  if(!t) return null;
+  const p=t.split(':').map(Number);
+  return p[0]*60+(p[1]||0);
+}
+// eta = "7:30 - 8:00" → use the END time as deadline
+function isLate(checkTime, eta) {
+  if(!checkTime||!eta) return false;
+  const end = (eta.split(' - ')[1]||eta).trim();
+  const cm = mins(checkTime), em = mins(end);
+  return cm!==null && em!==null && cm > em;
+}
+
+// ── FILTERS ──
+const TRANSP_SHORT = {"Hawk Transportes":"Hawk","DECARGO":"DECARGO","PARCEIRO SPOT SOLUCOES":"PARCEIRO","COOPMETRO":"COOPMETRO","ECO EXPRESS":"ECO"};
+let activeFilter = "TODOS";
+
+function buildFilters() {
+  const lista = ['TODOS', ...new Set(RAW_DATA.map(r=>r[2]).filter(Boolean))];
+  document.getElementById('filterTabs').innerHTML = lista.map(t =>
+    `<button class="filter-btn${t==='TODOS'?' active':''}" data-t="${t}" onclick="setFilter('${t}')">${t==='TODOS'?'Todos':(TRANSP_SHORT[t]||t.split(' ')[0])}</button>`
+  ).join('');
+}
+
+function setFilter(t) {
+  activeFilter=t;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.getAttribute('data-t')===t));
+  renderList();
+}
+
+function sorted(arr) {
+  return [...arr].sort((a,b)=>{
+    const on=r=>parseInt(r[0].replace('Onda ',''))||0;
+    const vn=r=>parseFloat(r[7])||0;
+    return on(a)-on(b)||vn(a)-vn(b);
+  });
+}
+function filtered() {
+  const base = activeFilter==='TODOS' ? RAW_DATA : RAW_DATA.filter(r=>r[2]===activeFilter);
+  return sorted(base);
+}
+
+// ── RENDER ──
+function renderList() {
+  const data = filtered();
+  const vol  = data.filter(r=>r[5]==='1 Volumosos');
+  const lev  = data.filter(r=>r[5]==='2 Leves');
+  let html = '';
+  if(vol.length) html += buildSection('1 Volumosos', vol);
+  if(lev.length) html += buildSection('2 Leves',     lev);
+  if(!html)      html  = '<div class="empty-msg">Nenhuma rota encontrada.</div>';
+  document.getElementById('listContainer').innerHTML = html;
+  updateStats();
+}
+
+function buildSection(tipo, rows) {
+  const isVol = tipo==='1 Volumosos';
+  const cls   = isVol?'vol':'lev';
+  const cnt   = rows.filter(r=>isCalled(RAW_DATA.findIndex(x=>x[1]===r[1]))).length;
+
+  let html = `
+  <div class="tipo-header">
+    <span>${isVol?'📦':'📬'}</span>
+    <span class="tipo-label ${cls}">${isVol?'Volumosos':'Leves'}</span>
+    <div class="tipo-divider"></div>
+    <span class="tipo-pill ${cls}">${cnt}/${rows.length}</span>
+  </div>
+  <div class="table-wrap">
+    <div class="tbl-head">
+      <span>Solicitado</span>
+      <span>Onda</span>
+      <span>Rota - Transportadora</span>
+      <span>Modal</span>
+      <span style="text-align:center">Vaga</span>
+      <span style="text-align:center">Chamado</span>
+    </div>`;
+
+  rows.forEach(r => {
+    const [onda, rota, transp, modal, tipoRota,, eta, vaga] = r;
+    const gi     = RAW_DATA.findIndex(x=>x[1]===rota);
+    const called = isCalled(gi);
+    const ct     = getTime(gi);
+    const late   = called && isLate(ct, eta);
+    const hib    = tipoRota==='Híbrida' ? `<span class="badge-hibrida">Híbrida</span>` : '';
+
+    html += `
+    <div class="route-row${called?' called':''}" data-t="${transp}" onclick="toggle(${gi})">
+      <div class="cell-check">
+        <div class="check-box${called?' checked':''}">${called?'✓':''}</div>
+      </div>
+      <div class="cell-onda">
+        <div class="onda-num">${onda}</div>
+        <div class="onda-eta">${eta}</div>
+      </div>
+      <div class="cell-info">
+        <div class="info-row1"><span class="rota-code">${rota}</span>${hib}</div>
+        <div class="info-row2">
+          <div class="transp-dot" data-t="${transp}"></div>
+          <span class="transp-name" data-t="${transp}">${transp}</span>
+        </div>
+      </div>
+      <div class="cell-modal"><span class="modal-tag">${modal}</span></div>
+      <div class="cell-vaga">
+        <div class="vaga-num">${vaga}</div>
+        <div class="vaga-lbl">vaga</div>
+      </div>
+      <div class="cell-hora">
+        ${ct
+          ? `<span class="hora-time${late?' late':''}">${ct}</span>`
+          : `<span class="hora-dash">—</span>`}
+      </div>
+    </div>`;
+  });
+
+  return html + '</div>';
+}
+
+async function toggle(idx) {
+  const nc   = !isCalled(idx);
+  const hora = nc ? now() : null;
+  const rota = RAW_DATA[idx][1];
+  S[idx] = { called: nc, time: hora };
+  renderList(); // UI imediata
+
+  showToast(nc ? 'Salvando...' : 'Removendo...');
+  try {
+    await api('salvarCheck', { rota, called: nc, hora: hora || '' });
+    showToast(nc ? '✓ Chamado registrado' : '↩ Removido', 2000);
+  } catch(e) {
+    showToast('⚠️ Erro ao salvar', 2500);
+  }
+}
+
+function updateStats() {
+  const data   = filtered();
+  const total  = data.length;
+  const called = data.filter(r=>isCalled(RAW_DATA.findIndex(x=>x[1]===r[1]))).length;
+  const gCalled= RAW_DATA.filter((_,i)=>isCalled(i)).length;
+  const gTotal = RAW_DATA.length;
+  const pct    = gTotal ? Math.round(gCalled/gTotal*100) : 0;
+  const late   = RAW_DATA.filter((_,i)=>isCalled(i)&&isLate(getTime(i),RAW_DATA[i][6])).length;
+
+  // Volumosos / Leves breakdown (always global, all data)
+  const volAll    = RAW_DATA.filter(r=>r[5]==='1 Volumosos');
+  const levAll    = RAW_DATA.filter(r=>r[5]==='2 Leves');
+  const volCalled = volAll.filter(r=>isCalled(RAW_DATA.findIndex(x=>x[1]===r[1]))).length;
+  const levCalled = levAll.filter(r=>isCalled(RAW_DATA.findIndex(x=>x[1]===r[1]))).length;
+  const volPct    = volAll.length ? Math.round(volCalled/volAll.length*100) : 0;
+  const levPct    = levAll.length ? Math.round(levCalled/levAll.length*100) : 0;
+
+  document.getElementById('hBar').style.width      = pct+'%';
+  document.getElementById('kpiPct').textContent    = pct+'%';
+  document.getElementById('kpiBar').style.width    = pct+'%';
+  document.getElementById('kpiLate').textContent   = late;
+
+  document.getElementById('kpiVolPct').textContent  = volPct+'%';
+  document.getElementById('kpiVolBar').style.width  = volPct+'%';
+  document.getElementById('kpiVolCount').textContent= volCalled+'/'+volAll.length;
+  document.getElementById('kpiLevPct').textContent  = levPct+'%';
+  document.getElementById('kpiLevBar').style.width  = levPct+'%';
+  document.getElementById('kpiLevCount').textContent= levCalled+'/'+levAll.length;
+
+  document.getElementById('kTotal').textContent    = total;
+  document.getElementById('kCalled').textContent   = called;
+  document.getElementById('kPending').textContent  = total-called;
+}
+
+async function resetAll() {
+  if(!confirm('Resetar todas as chamadas do dia?')) return;
+  S = {};
+  renderList();
+  showToast('Resetando...');
+  try {
+    await api('resetarHoje');
+    showToast('✓ Resetado', 2000);
+  } catch(e) {
+    showToast('⚠️ Erro ao resetar', 2000);
+  }
+}
+
+// Toast helper
+let toastTimer;
+function showToast(msg, ms) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#333;color:#fff;font-size:12px;font-weight:600;padding:7px 18px;border-radius:20px;z-index:999;transition:opacity .3s;pointer-events:none';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(toastTimer);
+  if (ms) toastTimer = setTimeout(() => { t.style.opacity = '0'; }, ms);
+}
+
+init();
+</script>
+</body>
+</html>
